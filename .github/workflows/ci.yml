@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dir: interactive_nav
+          - dir: terrain_carry_rl
+            smoke: terrain-carry-rl smoke --config configs/smoke.json
+          - dir: cleanrobot_sim2real
+            smoke: sim2skill smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest
+      - if: matrix.smoke
+        run: ${{ matrix.smoke }}
